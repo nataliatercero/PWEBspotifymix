@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import ArtistWidget from '@/components/widgets/ArtistWidget';
 import GenreWidget from '@/components/widgets/GenreWidget';
 import DecadeWidget from '@/components/widgets/DecadeWidget';
+import PopularityWidget from '@/components/widgets/PopularityWidget'; 
 import TrackCard from '@/components/TrackCard';
 import { getArtistTopTracks, searchTracksByGenre, searchTracksByYear, getUserProfile, createPlaylist } from '@/lib/spotify'; 
 
@@ -15,6 +16,7 @@ export default function Dashboard() {
   const [misArtistas, setMisArtistas] = useState([]);
   const [misGeneros, setMisGeneros] = useState([]);
   const [misDecadas, setMisDecadas] = useState([]);
+  const [minPopularity, setMinPopularity] = useState(50); // Por defecto, 50%
   
   const [playlist, setPlaylist] = useState([]);
   const [favorites, setFavorites] = useState([]);
@@ -51,6 +53,17 @@ export default function Dashboard() {
       const results = await Promise.all([...artistPromises, ...genrePromises, ...decadePromises]);
 
       let allTracks = results.flat();
+
+      const threshold = minPopularity; 
+      allTracks = allTracks.filter(track => {
+         if (threshold > 70) return track.popularity >= 50;
+         if (threshold < 30) return track.popularity <= 60;
+         return true;
+      });
+
+      // Si el filtro es muy estricto y nos quedamos sin canciones, devolver todas 
+      if (allTracks.length < 5) allTracks = results.flat();
+
       const uniqueTracks = Array.from(new Map(allTracks.map(t => [t.id, t])).values());
       const shuffled = uniqueTracks.sort(() => Math.random() - 0.5);
       setPlaylist(shuffled);
@@ -116,6 +129,7 @@ export default function Dashboard() {
           <ArtistWidget token={token} onSelectionChange={setMisArtistas} />
           <GenreWidget onSelectionChange={setMisGeneros} />
           <DecadeWidget onSelectionChange={setMisDecadas} />
+          <PopularityWidget onSelectionChange={setMinPopularity} />
         </div>
 
         <div className="bg-neutral-900 p-6 rounded-xl border border-neutral-800 h-fit sticky top-8 flex flex-col max-h-[80vh]">
@@ -125,7 +139,7 @@ export default function Dashboard() {
               {playlist.length > 0 && <span className="text-sm bg-neutral-700 px-2 py-1 rounded text-gray-300">{playlist.length} canciones</span>}
             </h2>
             <p className="text-gray-400 text-sm mt-1">
-              {playlist.length === 0 ? 'Genera una lista para empezar' : 'Exporta el resultado a tu app de Spotify'}
+              {playlist.length === 0 ? 'Genera una lista para empezar' : `Filtro de popularidad: ${minPopularity}%`}
             </p>
           </div>
           
