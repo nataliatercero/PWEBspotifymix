@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import toast, { Toaster } from 'react-hot-toast';
 
 import ArtistWidget from '@/components/widgets/ArtistWidget';
 import GenreWidget from '@/components/widgets/GenreWidget';
@@ -67,19 +68,25 @@ export default function Dashboard() {
     setPlaylist(historyItem.tracks);
     setActiveView('home');
     setGenerationSource('history');
+    toast.success('Playlist restaurada del historial');
   };
 
   const clearHistory = () => {
-    if(!confirm("¿Borrar todo el historial?")) return;
     setHistory([]);
     localStorage.removeItem('stm_history');
+    toast('Historial eliminado');
   };
 
   const toggleFavorite = (track) => {
     const isAlreadyFav = favorites.some(f => f.id === track.id);
     let newFavs;
-    if (isAlreadyFav) newFavs = favorites.filter(f => f.id !== track.id);
-    else newFavs = [...favorites, track];
+    if (isAlreadyFav) {
+        newFavs = favorites.filter(f => f.id !== track.id);
+        toast('Eliminado de favoritos');
+    } else {
+        newFavs = [...favorites, track];
+        toast('Añadido a favoritos', { icon: '❤️' });
+    }
     setFavorites(newFavs);
     localStorage.setItem('my_favorites', JSON.stringify(newFavs));
   };
@@ -95,6 +102,7 @@ export default function Dashboard() {
     setPlaylist([]); 
     setActiveView('home');
     setGenerationSource('filters');
+    toast('Filtros borrados');
   };
 
   const fetchTracksFromFilters = async () => {
@@ -155,8 +163,10 @@ export default function Dashboard() {
       
       setPlaylist(shuffled);
       saveToHistory(shuffled, 'filters');
+      toast.success('Playlist generada con éxito');
     } catch (error) {
       console.error(error);
+      toast.error('Error generando playlist');
     } finally {
       setIsGenerating(false);
     }
@@ -176,11 +186,13 @@ export default function Dashboard() {
           setPlaylist(shuffled);
           setActiveView('home'); 
           saveToHistory(shuffled, 'favorites');
+          toast.success('Descubrimientos generados');
       } else {
-          alert("No pudimos encontrar canciones similares.");
+          toast.error("No se encontraron canciones similares");
       }
     } catch (error) {
       console.error(error);
+      toast.error('Error buscando similares');
     } finally {
       setIsGenerating(false);
     }
@@ -195,8 +207,10 @@ export default function Dashboard() {
       const shuffled = uniqueTracks.sort(() => Math.random() - 0.5);
       setPlaylist(shuffled);
       saveToHistory(shuffled, generationSource);
+      toast.success('Playlist regenerada');
     } catch (error) {
       console.error(error);
+      toast.error('Error al regenerar');
     } finally {
       setIsGenerating(false);
     }
@@ -209,8 +223,10 @@ export default function Dashboard() {
       const combined = [...playlist, ...newTracks];
       const uniqueTracks = Array.from(new Map(combined.map(t => [t.id, t])).values());
       setPlaylist(uniqueTracks);
+      toast.success('Canciones añadidas');
     } catch (error) {
       console.error(error);
+      toast.error('Error al añadir más');
     } finally {
       setIsGenerating(false);
     }
@@ -240,7 +256,7 @@ export default function Dashboard() {
     try {
       const user = await getUserProfile(token);
       if (!user || !user.id) {
-        alert('Error: No se pudo identificar al usuario');
+        toast.error('No se pudo identificar al usuario');
         return;
       }
       
@@ -251,11 +267,11 @@ export default function Dashboard() {
 
       const result = await createPlaylist(user.id, playlistName.substring(0, 50), trackUris, token);
       
-      if (result) alert('¡Playlist guardada en tu Spotify con éxito');
-      else alert('Hubo un error al guardar la playlist.');
+      if (result) toast.success('¡Guardada en tu Spotify!');
+      else toast.error('Hubo un error al guardar');
     } catch (error) {
       console.error(error);
-      alert('Error de conexión');
+      toast.error('Error de conexión');
     } finally {
       setIsSaving(false);
     }
@@ -283,6 +299,13 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-neutral-950 text-white p-8">
       
+      <Toaster position="bottom-center" toastOptions={{
+        style: {
+          background: '#333',
+          color: '#fff',
+        },
+      }}/>
+
       <TrackModal track={selectedTrack} onClose={() => setSelectedTrack(null)} />
 
       <header className="mb-10 max-w-6xl mx-auto flex justify-between items-end">
@@ -351,8 +374,8 @@ export default function Dashboard() {
             <>
                 {favorites.length > 0 ? (
                     <>
-                        <button onClick={handleDiscoverFromFavorites} disabled={isGenerating} className="w-full mb-4 py-3 bg-purple-600 text-white font-bold rounded-full hover:bg-purple-500 shadow-lg shadow-purple-900/20">{isGenerating ? 'Analizando...' : '🔮 Descubrir similares'}</button>
-                        <button onClick={handleExportToSpotify} disabled={isSaving} className="w-full mb-6 py-3 bg-green-800 text-green-100 font-bold rounded-full hover:bg-green-700 border border-green-700 transition">{isSaving ? 'Guardando...' : '💾 Guardar Favoritos'}</button>
+                        <button onClick={handleDiscoverFromFavorites} disabled={isGenerating} className="w-full mb-4 py-3 bg-purple-600 text-white font-bold rounded-full hover:bg-purple-500 shadow-lg shadow-purple-900/20">{isGenerating ? 'Analizando...' : 'Descubrir similares'}</button>
+                        <button onClick={handleExportToSpotify} disabled={isSaving} className="w-full mb-6 py-3 bg-green-800 text-green-100 font-bold rounded-full hover:bg-green-700 border border-green-700 transition">{isSaving ? 'Guardando...' : 'Guardar Favoritos'}</button>
                     </>
                 ) : (
                     <div className="text-center py-10 text-gray-500">No tienes favoritos aún. Dale al ❤️ en las canciones.</div>
