@@ -18,6 +18,7 @@ export default function Dashboard() {
   const router = useRouter();
   const [token, setToken] = useState(null);
   
+  // Estados de los filtros
   const [misArtistas, setMisArtistas] = useState([]);
   const [misGeneros, setMisGeneros] = useState([]);
   const [misDecadas, setMisDecadas] = useState([]);
@@ -27,10 +28,12 @@ export default function Dashboard() {
   
   const [resetKey, setResetKey] = useState(0);
 
+  // Estados de datos
   const [playlist, setPlaylist] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [history, setHistory] = useState([]); 
   
+  // Estados de vista
   const [activeView, setActiveView] = useState('home'); 
   const [generationSource, setGenerationSource] = useState('filters'); 
   const [selectedTrack, setSelectedTrack] = useState(null); 
@@ -38,6 +41,7 @@ export default function Dashboard() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false); 
 
+  // Carga inicial de datos
   useEffect(() => {
     const t = localStorage.getItem('spotify_token');
     if (!t) router.push('/');
@@ -50,6 +54,7 @@ export default function Dashboard() {
     if (savedHistory) setHistory(JSON.parse(savedHistory));
   }, [router]);
 
+  // Gestión del historial
   const saveToHistory = (tracks, type) => {
     if (tracks.length === 0) return;
     const newEntry = {
@@ -72,11 +77,13 @@ export default function Dashboard() {
   };
 
   const clearHistory = () => {
+    // Confirmación nativa eliminada por toast
     setHistory([]);
     localStorage.removeItem('stm_history');
     toast('Historial eliminado');
   };
 
+  // Gestión de favoritos
   const toggleFavorite = (track) => {
     const isAlreadyFav = favorites.some(f => f.id === track.id);
     let newFavs;
@@ -91,6 +98,7 @@ export default function Dashboard() {
     localStorage.setItem('my_favorites', JSON.stringify(newFavs));
   };
 
+  // Limpieza de filtros
   const handleClearFilters = () => {
     setMisArtistas([]);
     setMisGeneros([]);
@@ -105,6 +113,7 @@ export default function Dashboard() {
     toast('Filtros borrados');
   };
 
+  // Lógica de obtención de canciones por filtros
   const fetchTracksFromFilters = async () => {
     let promises = [];
     if (misArtistas.length > 0) promises.push(...misArtistas.map(a => getArtistTopTracks(a.id, token)));
@@ -123,6 +132,7 @@ export default function Dashboard() {
     const results = await Promise.all(promises);
     let allTracks = results.filter(r => r !== null).flat();
 
+    // Filtrado final por popularidad
     if (minPopularity !== null) {
         const threshold = minPopularity; 
         allTracks = allTracks.filter(track => {
@@ -135,6 +145,7 @@ export default function Dashboard() {
     return allTracks;
   };
 
+  // Lógica de obtención de canciones por favoritos
   const fetchTracksFromFavorites = async () => {
     if (favorites.length === 0) return [];
     const artistNames = favorites.map(t => t.artists[0].name);
@@ -145,11 +156,13 @@ export default function Dashboard() {
     return results.filter(r => r !== null).flat();
   };
 
+  // Selector de estrategia de búsqueda
   const fetchTracksBasedOnMode = async () => {
     if (generationSource === 'favorites') return await fetchTracksFromFavorites();
     else return await fetchTracksFromFilters();
   };
 
+  // Handlers de botones principales
   const handleGenerateFromFilters = async () => {
     setGenerationSource('filters');
     setActiveView('home');
@@ -232,6 +245,7 @@ export default function Dashboard() {
     }
   };
 
+  // Drag and drop reordering
   const handleOnDragEnd = (result) => {
     if (!result.destination) return;
     if (activeView === 'history') return;
@@ -248,6 +262,7 @@ export default function Dashboard() {
     }
   };
 
+  // Exportación a Spotify
   const handleExportToSpotify = async () => {
     const tracksToExport = activeView === 'favorites' ? favorites : playlist;
     if (tracksToExport.length === 0) return;
@@ -288,6 +303,7 @@ export default function Dashboard() {
 
   if (!token) return null;
 
+  // Validación de filtros activos
   const canGenerateFilters = 
     misArtistas.length > 0 || misGeneros.length > 0 || misDecadas.length > 0 || 
     minPopularity !== null || miMood !== null || (miEnergia < 30 || miEnergia > 70);
@@ -395,7 +411,7 @@ export default function Dashboard() {
                                     <p className="font-bold text-white text-sm">{item.type}</p>
                                     <p className="text-xs text-gray-400">{item.date} • {item.trackCount} canciones</p>
                                 </div>
-                                <span className="text-blue-400 text-xs opacity-0 group-hover:opacity-100 transition">Recuperar ↩</span>
+                                <span className="text-blue-400 text-xs opacity-0 group-hover:opacity-100 transition">Recuperar</span>
                             </div>
                         ))}
                         <button onClick={clearHistory} className="w-full text-xs text-red-500 hover:text-red-400 mt-4 underline">Limpiar historial</button>

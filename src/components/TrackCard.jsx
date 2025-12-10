@@ -2,6 +2,7 @@
 
 export default function TrackCard({ track, onRemove, isFavorite, onToggleFavorite, onOpenModal }) {
   
+  // Helper para formatear milisegundos a minutos:segundos
   const formatTime = (ms) => {
     const minutes = Math.floor(ms / 60000);
     const seconds = ((ms % 60000) / 1000).toFixed(0);
@@ -11,6 +12,7 @@ export default function TrackCard({ track, onRemove, isFavorite, onToggleFavorit
   return (
     <div className={`flex items-center justify-between p-3 rounded hover:bg-neutral-800 transition group ${isFavorite ? 'bg-neutral-800 border border-green-900/30' : 'bg-neutral-900'}`}>
       
+      {/* Sección izquierda: Imagen y textos */}
       <div className="flex items-center gap-3 overflow-hidden flex-1">
         <img 
           src={track.album.images[2]?.url} 
@@ -32,6 +34,7 @@ export default function TrackCard({ track, onRemove, isFavorite, onToggleFavorit
         </div>
       </div>
 
+      {/* Sección derecha: Botones de acción */}
       <div className="flex items-center gap-3 shrink-0">
         <button
           onClick={() => onOpenModal(track)}

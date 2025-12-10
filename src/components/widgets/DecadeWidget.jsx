@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+// Configuración estática de décadas
 const DECADES = [
   { id: '1960-1969', label: '60s' },
   { id: '1970-1979', label: '70s' },
@@ -15,6 +16,7 @@ const DECADES = [
 export default function DecadeWidget({ onSelectionChange }) {
   const [selected, setSelected] = useState([]);
 
+  // Lógica de selección múltiple
   const toggleDecade = (range) => {
     let newSelection;
     if (selected.includes(range)) {
@@ -29,6 +31,8 @@ export default function DecadeWidget({ onSelectionChange }) {
   return (
     <div className="bg-neutral-800 p-6 rounded-xl border border-neutral-700">
       <h3 className="text-xl font-bold text-white mb-4">3. Viaje en el tiempo ⏳</h3>
+      
+      {/* Renderizado de la cuadrícula */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {DECADES.map(decade => (
           <button

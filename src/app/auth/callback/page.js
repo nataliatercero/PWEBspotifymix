@@ -8,6 +8,7 @@ export default function CallbackPage() {
   const router = useRouter();
   const code = searchParams.get('code');
   
+  // Control para evitar doble ejecución en React Strict Mode
   const hasFetched = useRef(false);
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export default function CallbackPage() {
 
     async function getToken() {
         try {
+            // Intercambio del código por el token de acceso
             const response = await fetch('/api/spotify-token', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -29,6 +31,8 @@ export default function CallbackPage() {
 
             if (response.ok) {
                 const data = await response.json();
+                
+                // Guardado de sesión y redirección
                 localStorage.setItem('spotify_token', data.access_token);
                 localStorage.setItem('spotify_refresh_token', data.refresh_token);
                 

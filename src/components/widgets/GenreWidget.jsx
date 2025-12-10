@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+// Lista predefinida de géneros 
 const GENRES = [
   'pop', 'rock', 'hip-hop', 'indie', 'alternative', 'dance', 
   'electronic', 'latin', 'reggaeton', 'k-pop', 'metal', 
@@ -11,12 +12,13 @@ const GENRES = [
 export default function GenreWidget({ onSelectionChange }) {
   const [selected, setSelected] = useState([]);
 
+  // Gestión de selección con límite máximo de 5
   const toggleGenre = (genre) => {
     let newSelection;
     if (selected.includes(genre)) {
       newSelection = selected.filter(g => g !== genre);
     } else {
-      if (selected.length >= 5) return; // Límite de 5 géneros
+      if (selected.length >= 5) return; 
       newSelection = [...selected, genre];
     }
     setSelected(newSelection);
@@ -28,6 +30,7 @@ export default function GenreWidget({ onSelectionChange }) {
       <h3 className="text-xl font-bold text-white mb-4">2. Elige Géneros 🎸</h3>
       <p className="text-xs text-gray-400 mb-4">Selecciona hasta 5 estilos</p>
       
+      {/* Grid de botones de género */}
       <div className="flex flex-wrap gap-2">
         {GENRES.map(genre => (
           <button

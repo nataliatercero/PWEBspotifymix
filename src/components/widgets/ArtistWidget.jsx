@@ -8,25 +8,25 @@ export default function ArtistWidget({ token, onSelectionChange }) {
   const [results, setResults] = useState([]);
   const [selected, setSelected] = useState([]);
 
-  // Función para buscar cuando le das al botón
+  // Ejecutar búsqueda en la API
   const handleSearch = async () => {
     if (!query) return;
     const artists = await searchArtists(query, token);
     setResults(artists);
   };
 
-  // Función para seleccionar un artista
+  // Añadir artista a la selección
   const toggleArtist = (artist) => {
-    // Evitamos duplicados
+    // Evitar duplicados
     if (selected.find(a => a.id === artist.id)) return;
     
-    // Añadimos y avisamos al padre (Dashboard)
+    // Actualizar estado local y notificar al padre
     const newSelection = [...selected, artist];
     setSelected(newSelection);
     onSelectionChange(newSelection); 
   };
 
-  // Función para borrar
+  // Eliminar artista de la lista
   const removeArtist = (artistId) => {
     const newSelection = selected.filter(a => a.id !== artistId);
     setSelected(newSelection);
@@ -37,6 +37,7 @@ export default function ArtistWidget({ token, onSelectionChange }) {
     <div className="bg-neutral-800 p-6 rounded-xl border border-neutral-700">
       <h3 className="text-xl font-bold text-white mb-4">1. Elige tus Artistas 🎤</h3>
       
+      {/* Barra de búsqueda */}
       <div className="flex gap-2 mb-4">
         <input
           type="text"
@@ -54,6 +55,7 @@ export default function ArtistWidget({ token, onSelectionChange }) {
         </button>
       </div>
 
+      {/* Lista de seleccionados */}
       <div className="flex flex-wrap gap-2 mb-4">
         {selected.map(artist => (
           <span key={artist.id} className="bg-green-900 text-green-100 px-3 py-1 rounded-full text-sm flex items-center gap-2">
@@ -63,6 +65,7 @@ export default function ArtistWidget({ token, onSelectionChange }) {
         ))}
       </div>
 
+      {/* Resultados de búsqueda */}
       <div className="space-y-2 max-h-60 overflow-y-auto">
         {results.map(artist => (
           <div 
