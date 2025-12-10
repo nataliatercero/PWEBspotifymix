@@ -22,3 +22,9 @@ export async function searchArtists(query, token) {
   const data = await fetchSpotify(`/search?type=artist&q=${encodeURIComponent(query)}&limit=5`, token);
   return data?.artists?.items || [];
 }
+
+// 2. Obtener Top Tracks de un artista
+export async function getArtistTopTracks(artistId, token) {
+  const data = await fetchSpotify(`/artists/${artistId}/top-tracks?market=ES`, token);
+  return data?.tracks || [];
+}
