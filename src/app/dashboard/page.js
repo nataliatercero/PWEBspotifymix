@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+
 import ArtistWidget from '@/components/widgets/ArtistWidget';
 import GenreWidget from '@/components/widgets/GenreWidget';
 import DecadeWidget from '@/components/widgets/DecadeWidget';
@@ -191,6 +193,22 @@ export default function Dashboard() {
 
   const currentTracks = showFavorites ? favorites : playlist;
 
+  // Lógica para reordenar al soltar
+  const handleOnDragEnd = (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(currentTracks);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    if (showFavorites) {
+        setFavorites(items);
+        localStorage.setItem('my_favorites', JSON.stringify(items));
+    } else {
+        setPlaylist(items);
+    }
+  };
+
   const handleExportToSpotify = async () => {
     if (currentTracks.length === 0) return;
     setIsSaving(true);
@@ -347,15 +365,34 @@ export default function Dashboard() {
                 <p>{showFavorites ? 'Aún no tienes favoritos' : 'Configura tus filtros y dale a Generar'}</p>
               </div>
             ) : (
-              currentTracks.map(track => (
-                <TrackCard 
-                  key={track.id} 
-                  track={track} 
-                  onRemove={removeTrack}
-                  isFavorite={favorites.some(f => f.id === track.id)}
-                  onToggleFavorite={toggleFavorite}
-                />
-              ))
+              // ZONA DRAG & DROP
+              <DragDropContext onDragEnd={handleOnDragEnd}>
+                <Droppable droppableId="tracks">
+                  {(provided) => (
+                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                      {currentTracks.map((track, index) => (
+                        <Draggable key={track.id} draggableId={track.id} index={index}>
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                            >
+                              <TrackCard 
+                                track={track} 
+                                onRemove={removeTrack}
+                                isFavorite={favorites.some(f => f.id === track.id)}
+                                onToggleFavorite={toggleFavorite}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             )}
           </div>
         </div>
