@@ -1,3 +1,6 @@
+'use client';
+import { loginWithSpotify } from '@/lib/auth';
+
 export default function Home() {
   return (
     <main className="p-10">
@@ -14,12 +17,12 @@ export default function Home() {
           Conecta tu cuenta de Spotify para comenzar a mezclar tus gustos
           musicales y descubrir nuevas canciones.
         </p>
-        <a
-          href="/auth/login"
-          className="inline-block bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition"
+        <button
+          onClick={loginWithSpotify}
+          className="w-full bg-green-600 text-white font-bold py-3 px-4 rounded hover:bg-green-700 transition"
         >
           Conectar con Spotify
-        </a>
+        </button>
       </div>
     </main>
   );
