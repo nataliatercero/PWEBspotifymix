@@ -36,3 +36,10 @@ export async function searchTracksByGenre(genre, token) {
   const data = await fetchSpotify(`/search?type=track&q=genre:${encodeURIComponent(genre)}&limit=10&offset=${offset}`, token);
   return data?.tracks?.items || [];
 }
+
+// 4. Buscar tracks por rango de años
+export async function searchTracksByYear(yearRange, token) {
+  const offset = Math.floor(Math.random() * 20);
+  const data = await fetchSpotify(`/search?type=track&q=year:${yearRange}&limit=10&offset=${offset}`, token);
+  return data?.tracks?.items || [];
+}

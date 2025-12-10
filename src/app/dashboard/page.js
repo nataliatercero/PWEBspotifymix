@@ -3,49 +3,67 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ArtistWidget from '@/components/widgets/ArtistWidget';
-import GenreWidget from '@/components/widgets/GenreWidget'; 
+import GenreWidget from '@/components/widgets/GenreWidget';
+import DecadeWidget from '@/components/widgets/DecadeWidget';
 import TrackCard from '@/components/TrackCard';
-import { getArtistTopTracks, searchTracksByGenre } from '@/lib/spotify'; 
+import { getArtistTopTracks, searchTracksByGenre, searchTracksByYear } from '@/lib/spotify'; 
 
 export default function Dashboard() {
   const router = useRouter();
   const [token, setToken] = useState(null);
   
   const [misArtistas, setMisArtistas] = useState([]);
-  const [misGeneros, setMisGeneros] = useState([]); 
+  const [misGeneros, setMisGeneros] = useState([]);
+  const [misDecadas, setMisDecadas] = useState([]);
+  
   const [playlist, setPlaylist] = useState([]);
+  const [favorites, setFavorites] = useState([]); 
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     const t = localStorage.getItem('spotify_token');
     if (!t) router.push('/');
     else setToken(t);
+
+    // Cargar favoritos guardados
+    const savedFavs = localStorage.getItem('my_favorites');
+    if (savedFavs) {
+      setFavorites(JSON.parse(savedFavs));
+    }
   }, [router]);
 
+  // Función para manejar favoritos
+  const toggleFavorite = (track) => {
+    const isAlreadyFav = favorites.some(f => f.id === track.id);
+    let newFavs;
+
+    if (isAlreadyFav) {
+      // Si ya es favorito, se quita
+      newFavs = favorites.filter(f => f.id !== track.id);
+    } else {
+      // Si no, se añade
+      newFavs = [...favorites, track];
+    }
+
+    setFavorites(newFavs);
+    localStorage.setItem('my_favorites', JSON.stringify(newFavs)); // Guardar en disco
+  };
+
   const handleGeneratePlaylist = async () => {
-    // Validamos que haya al menos algo seleccionado
-    if (misArtistas.length === 0 && misGeneros.length === 0) return;
+    if (misArtistas.length === 0 && misGeneros.length === 0 && misDecadas.length === 0) return;
     
     setIsGenerating(true);
     setPlaylist([]);
 
     try {
-      // Peticiones de Artistas
       const artistPromises = misArtistas.map(artist => getArtistTopTracks(artist.id, token));
-      
-      // Peticiones de Géneros 
       const genrePromises = misGeneros.map(genre => searchTracksByGenre(genre, token));
+      const decadePromises = misDecadas.map(yearRange => searchTracksByYear(yearRange, token));
 
-      // Ejecutamos todo a la vez
-      const results = await Promise.all([...artistPromises, ...genrePromises]);
+      const results = await Promise.all([...artistPromises, ...genrePromises, ...decadePromises]);
 
-      // Aplanamos y mezclamos
       let allTracks = results.flat();
-      
-      // Eliminamos duplicados por ID (importante al mezclar fuentes)
       const uniqueTracks = Array.from(new Map(allTracks.map(t => [t.id, t])).values());
-      
-      // Shuffle
       const shuffled = uniqueTracks.sort(() => Math.random() - 0.5);
 
       setPlaylist(shuffled);
@@ -64,40 +82,38 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white p-8">
-      <header className="mb-10 max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-green-500">Spotify Taste Mixer</h1>
-        <p className="text-gray-400">Configura tus preferencias</p>
+      <header className="mb-10 max-w-6xl mx-auto flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-bold text-green-500">Spotify Taste Mixer</h1>
+          <p className="text-gray-400">Configura tus preferencias</p>
+        </div>
+        <div className="text-right">
+           <span className="text-2xl">❤️ {favorites.length}</span>
+           <p className="text-xs text-gray-500">Favoritos guardados</p>
+        </div>
       </header>
 
       <main className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
         
         <div className="space-y-6">
-          <ArtistWidget 
-            token={token} 
-            onSelectionChange={setMisArtistas} 
-          />
-          
-          <GenreWidget 
-            onSelectionChange={setMisGeneros}
-          />
+          <ArtistWidget token={token} onSelectionChange={setMisArtistas} />
+          <GenreWidget onSelectionChange={setMisGeneros} />
+          <DecadeWidget onSelectionChange={setMisDecadas} />
         </div>
 
         <div className="bg-neutral-900 p-6 rounded-xl border border-neutral-800 h-fit sticky top-8 flex flex-col max-h-[80vh]">
           <div className="mb-4">
             <h2 className="text-2xl font-bold flex items-center gap-2">
               Tu Mezcla 💿
-              {playlist.length > 0 && <span className="text-sm bg-neutral-700 px-2 py-1 rounded text-gray-300">{playlist.length} canciones</span>}
             </h2>
             <p className="text-gray-400 text-sm mt-1">
-              {misArtistas.length + misGeneros.length === 0 
-                ? 'Selecciona artistas o géneros para empezar' 
-                : `Mezclando ${misArtistas.length} artistas y ${misGeneros.length} géneros`}
+              {playlist.length === 0 ? 'Genera una lista para empezar' : '¡Dale al corazón para guardar tus favoritas!'}
             </p>
           </div>
           
           <button 
             onClick={handleGeneratePlaylist}
-            disabled={misArtistas.length === 0 && misGeneros.length === 0 || isGenerating}
+            disabled={misArtistas.length === 0 && misGeneros.length === 0 && misDecadas.length === 0 || isGenerating}
             className="w-full py-3 bg-green-600 text-black font-bold rounded-full hover:bg-green-500 transition disabled:opacity-50 disabled:cursor-not-allowed mb-6 shadow-lg shadow-green-900/20"
           >
             {isGenerating ? 'Mezclando...' : 'Generar Playlist'}
@@ -113,7 +129,9 @@ export default function Dashboard() {
                 <TrackCard 
                   key={track.id} 
                   track={track} 
-                  onRemove={removeTrack} 
+                  onRemove={removeTrack}
+                  isFavorite={favorites.some(f => f.id === track.id)}
+                  onToggleFavorite={toggleFavorite}
                 />
               ))
             )}
