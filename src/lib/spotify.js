@@ -28,3 +28,11 @@ export async function getArtistTopTracks(artistId, token) {
   const data = await fetchSpotify(`/artists/${artistId}/top-tracks?market=ES`, token);
   return data?.tracks || [];
 }
+
+// 3. Buscar tracks por género
+export async function searchTracksByGenre(genre, token) {
+  // 10 resultados aleatorios
+  const offset = Math.floor(Math.random() * 20); 
+  const data = await fetchSpotify(`/search?type=track&q=genre:${encodeURIComponent(genre)}&limit=10&offset=${offset}`, token);
+  return data?.tracks?.items || [];
+}

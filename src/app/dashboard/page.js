@@ -3,16 +3,17 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ArtistWidget from '@/components/widgets/ArtistWidget';
+import GenreWidget from '@/components/widgets/GenreWidget'; 
 import TrackCard from '@/components/TrackCard';
-import { getArtistTopTracks } from '@/lib/spotify'; 
+import { getArtistTopTracks, searchTracksByGenre } from '@/lib/spotify'; 
 
 export default function Dashboard() {
   const router = useRouter();
   const [token, setToken] = useState(null);
   
-  // Estado de la aplicación
   const [misArtistas, setMisArtistas] = useState([]);
-  const [playlist, setPlaylist] = useState([]); // Aquí se guardan las canciones generadas
+  const [misGeneros, setMisGeneros] = useState([]); 
+  const [playlist, setPlaylist] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
@@ -22,23 +23,32 @@ export default function Dashboard() {
   }, [router]);
 
   const handleGeneratePlaylist = async () => {
-    if (misArtistas.length === 0) return;
+    // Validamos que haya al menos algo seleccionado
+    if (misArtistas.length === 0 && misGeneros.length === 0) return;
+    
     setIsGenerating(true);
-    setPlaylist([]); // Limpiar la lista anterior
+    setPlaylist([]);
 
     try {
-      // Pedimos las Top Tracks de CADA artista seleccionado
-      const promises = misArtistas.map(artist => getArtistTopTracks(artist.id, token));
-      const results = await Promise.all(promises);
+      // Peticiones de Artistas
+      const artistPromises = misArtistas.map(artist => getArtistTopTracks(artist.id, token));
+      
+      // Peticiones de Géneros 
+      const genrePromises = misGeneros.map(genre => searchTracksByGenre(genre, token));
 
-      // Juntamos todos los resultados en una sola lista (flat)
+      // Ejecutamos todo a la vez
+      const results = await Promise.all([...artistPromises, ...genrePromises]);
+
+      // Aplanamos y mezclamos
       let allTracks = results.flat();
+      
+      // Eliminamos duplicados por ID (importante al mezclar fuentes)
+      const uniqueTracks = Array.from(new Map(allTracks.map(t => [t.id, t])).values());
+      
+      // Shuffle
+      const shuffled = uniqueTracks.sort(() => Math.random() - 0.5);
 
-      // Mezclamos aleatoriamente para que no salgan por orden de artista
-      allTracks = allTracks.sort(() => Math.random() - 0.5);
-
-      // Guardamos en el estado
-      setPlaylist(allTracks);
+      setPlaylist(shuffled);
     } catch (error) {
       console.error("Error generando playlist:", error);
     } finally {
@@ -46,7 +56,6 @@ export default function Dashboard() {
     }
   };
 
-  // Función para borrar una canción individual
   const removeTrack = (trackId) => {
     setPlaylist(playlist.filter(t => t.id !== trackId));
   };
@@ -67,6 +76,10 @@ export default function Dashboard() {
             token={token} 
             onSelectionChange={setMisArtistas} 
           />
+          
+          <GenreWidget 
+            onSelectionChange={setMisGeneros}
+          />
         </div>
 
         <div className="bg-neutral-900 p-6 rounded-xl border border-neutral-800 h-fit sticky top-8 flex flex-col max-h-[80vh]">
@@ -76,13 +89,15 @@ export default function Dashboard() {
               {playlist.length > 0 && <span className="text-sm bg-neutral-700 px-2 py-1 rounded text-gray-300">{playlist.length} canciones</span>}
             </h2>
             <p className="text-gray-400 text-sm mt-1">
-              {misArtistas.length === 0 ? 'Selecciona artistas para empezar' : `Basado en ${misArtistas.length} artistas seleccionados`}
+              {misArtistas.length + misGeneros.length === 0 
+                ? 'Selecciona artistas o géneros para empezar' 
+                : `Mezclando ${misArtistas.length} artistas y ${misGeneros.length} géneros`}
             </p>
           </div>
           
           <button 
             onClick={handleGeneratePlaylist}
-            disabled={misArtistas.length === 0 || isGenerating}
+            disabled={misArtistas.length === 0 && misGeneros.length === 0 || isGenerating}
             className="w-full py-3 bg-green-600 text-black font-bold rounded-full hover:bg-green-500 transition disabled:opacity-50 disabled:cursor-not-allowed mb-6 shadow-lg shadow-green-900/20"
           >
             {isGenerating ? 'Mezclando...' : 'Generar Playlist'}
