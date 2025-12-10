@@ -57,12 +57,28 @@ export async function searchTracksByArtist(artistName, token) {
   return data?.tracks?.items || [];
 }
 
-// 6. Perfil Usuario
+// 6. Buscar por Mood/Energía (búsqueda por palabras clave)
+export async function searchTracksByMood(mood, energyLevel, token) {
+  let queryTerm = mood || '';
+  
+  // Traducimos la energía (0-100) a palabras clave que Spotify entiende
+  if (energyLevel > 80) queryTerm += ' party dance high energy';
+  else if (energyLevel > 60) queryTerm += ' upbeat';
+  else if (energyLevel < 20) queryTerm += ' sleep acoustic calm';
+  else if (energyLevel < 40) queryTerm += ' chill relaxed';
+
+  const offset = Math.floor(Math.random() * 20);
+  // Buscamos tracks que coincidan con esos términos
+  const data = await fetchSpotify(`/search?type=track&q=${encodeURIComponent(queryTerm.trim())}&limit=10&offset=${offset}`, token);
+  return data?.tracks?.items || [];
+}
+
+// 7. Perfil Usuario
 export async function getUserProfile(token) {
   return fetchSpotify('/me', token);
 }
 
-// 7. Crear Playlist
+// 8. Crear Playlist
 export async function createPlaylist(userId, name, trackUris, token) {
   try {
     const playlist = await fetchSpotify(`/users/${userId}/playlists`, token, {

@@ -6,8 +6,9 @@ import ArtistWidget from '@/components/widgets/ArtistWidget';
 import GenreWidget from '@/components/widgets/GenreWidget';
 import DecadeWidget from '@/components/widgets/DecadeWidget';
 import PopularityWidget from '@/components/widgets/PopularityWidget';
+import MoodWidget from '@/components/widgets/MoodWidget';
 import TrackCard from '@/components/TrackCard';
-import { getArtistTopTracks, searchTracksByGenre, searchTracksByYear, searchTracksByArtist, getUserProfile, createPlaylist } from '@/lib/spotify'; 
+import { getArtistTopTracks, searchTracksByGenre, searchTracksByYear, searchTracksByArtist, searchTracksByMood, getUserProfile, createPlaylist } from '@/lib/spotify'; 
 
 export default function Dashboard() {
   const router = useRouter();
@@ -17,6 +18,9 @@ export default function Dashboard() {
   const [misGeneros, setMisGeneros] = useState([]);
   const [misDecadas, setMisDecadas] = useState([]);
   const [minPopularity, setMinPopularity] = useState(null);
+  
+  const [miMood, setMiMood] = useState(null);
+  const [miEnergia, setMiEnergia] = useState(50);
   
   const [resetKey, setResetKey] = useState(0);
 
@@ -51,6 +55,8 @@ export default function Dashboard() {
     setMisGeneros([]);
     setMisDecadas([]);
     setMinPopularity(null);
+    setMiMood(null);
+    setMiEnergia(50);
     setResetKey(prev => prev + 1); 
     setPlaylist([]); 
     setShowFavorites(false);
@@ -64,11 +70,15 @@ export default function Dashboard() {
     if (misGeneros.length > 0) promises.push(...misGeneros.map(g => searchTracksByGenre(g, token)));
     if (misDecadas.length > 0) promises.push(...misDecadas.map(d => searchTracksByYear(d, token)));
 
+    const energyIsRelevant = miEnergia < 30 || miEnergia > 70;
+    if (miMood || energyIsRelevant) {
+        promises.push(searchTracksByMood(miMood, miEnergia, token));
+    }
+
     if (promises.length === 0 && minPopularity !== null) {
         promises.push(searchTracksByYear('2023-2024', token));
     }
 
-    // Filtramos resultados nulos por si alguna petición falló
     const results = await Promise.all(promises);
     let allTracks = results.filter(r => r !== null).flat();
 
@@ -87,14 +97,11 @@ export default function Dashboard() {
   const fetchTracksFromFavorites = async () => {
     if (favorites.length === 0) return [];
     
-    // 1. Obtenemos nombres de artistas de los favoritos
     const artistNames = favorites.map(t => t.artists[0].name);
     const uniqueNames = [...new Set(artistNames)];
     
-    // 2. Elegimos 5 al azar
     const shuffledNames = uniqueNames.sort(() => 0.5 - Math.random()).slice(0, 5);
     
-    // 3. Usamos la búsqueda por nombre (permite offset aleatorio para dar variedad)
     const promises = shuffledNames.map(name => searchTracksByArtist(name, token));
     
     const results = await Promise.all(promises);
@@ -132,7 +139,6 @@ export default function Dashboard() {
     
     setGenerationSource('favorites');
     setIsGenerating(true);
-    // No borramos playlist inmediatamente
     
     try {
       const tracks = await fetchTracksFromFavorites();
@@ -224,7 +230,13 @@ export default function Dashboard() {
 
   if (!token) return null;
 
-  const canGenerateFilters = misArtistas.length > 0 || misGeneros.length > 0 || misDecadas.length > 0 || minPopularity !== null;
+  const canGenerateFilters = 
+    misArtistas.length > 0 || 
+    misGeneros.length > 0 || 
+    misDecadas.length > 0 || 
+    minPopularity !== null ||
+    miMood !== null || 
+    miEnergia < 30 || miEnergia > 70;
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white p-8">
@@ -261,6 +273,7 @@ export default function Dashboard() {
             <GenreWidget onSelectionChange={setMisGeneros} />
             <DecadeWidget onSelectionChange={setMisDecadas} />
             <PopularityWidget onSelectionChange={setMinPopularity} />
+            <MoodWidget onMoodChange={setMiMood} onEnergyChange={setMiEnergia} />
           </div>
         </div>
 
