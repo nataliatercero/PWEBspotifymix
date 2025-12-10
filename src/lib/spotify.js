@@ -1,18 +1,22 @@
 const API_URL = 'https://api.spotify.com/v1';
 
-// Función genérica para hacer peticiones
-async function fetchSpotify(endpoint, token) {
+// Función genérica para hacer peticiones (actualizada para post)
+async function fetchSpotify(endpoint, token, options = {}) {
   const res = await fetch(`${API_URL}${endpoint}`, {
     headers: {
       Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
+    ...options, // Aquí permite pasar method: 'POST' y body
   });
 
-  if (res.status === 401) {
-    // Si el token caduca, aquí se manejará el error
-    return null;
-  }
+  if (res.status === 401) return null;
 
+  if (!res.ok) {
+      console.error(`Error en fetch a ${endpoint}:`, res.status);
+      return null;
+  }
+  
   return res.json();
 }
 
@@ -42,4 +46,39 @@ export async function searchTracksByYear(yearRange, token) {
   const offset = Math.floor(Math.random() * 20);
   const data = await fetchSpotify(`/search?type=track&q=year:${yearRange}&limit=10&offset=${offset}`, token);
   return data?.tracks?.items || [];
+}
+
+// Obtener perfil del usuario (para saber su ID)
+export async function getUserProfile(token) {
+  return fetchSpotify('/me', token);
+}
+
+// Crear una playlist y añadir canciones
+export async function createPlaylist(userId, name, trackUris, token) {
+  try {
+    // Crear la playlist vacía
+    const playlist = await fetchSpotify(`/users/${userId}/playlists`, token, {
+      method: 'POST',
+      body: JSON.stringify({
+        name: name,
+        description: 'Creada con Spotify Taste Mixer',
+        public: false // Se creará privada por defecto
+      })
+    });
+
+    if (!playlist || !playlist.id) return null;
+
+    // Añadir las canciones
+    await fetchSpotify(`/playlists/${playlist.id}/tracks`, token, {
+      method: 'POST',
+      body: JSON.stringify({
+        uris: trackUris
+      })
+    });
+
+    return playlist; // Devolver la playlist creada
+  } catch (error) {
+    console.error("Error creando playlist:", error);
+    return null;
+  }
 }
