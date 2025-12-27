@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+// Configuración de los estados de ánimo disponibles
 const MOODS = [
   { id: 'happy', label: 'Happy', color: 'bg-yellow-600' },
   { id: 'sad', label: 'Sad', color: 'bg-blue-800' },
@@ -13,13 +14,14 @@ export default function MoodWidget({ onMoodChange, onEnergyChange }) {
   const [selectedMood, setSelectedMood] = useState(null);
   const [energy, setEnergy] = useState(50);
 
+  // Manejador para alternar la selección del mood
   const handleMoodClick = (moodId) => {
-    // Si ya estaba seleccionado, lo quitamos 
     const newValue = selectedMood === moodId ? null : moodId;
     setSelectedMood(newValue);
     onMoodChange(newValue);
   };
 
+  // Manejador del slider de energía
   const handleEnergyChange = (e) => {
     const val = parseInt(e.target.value);
     setEnergy(val);
@@ -30,6 +32,8 @@ export default function MoodWidget({ onMoodChange, onEnergyChange }) {
     <div className="bg-neutral-800 p-6 rounded-xl border border-neutral-700">
       <h3 className="text-xl font-bold text-white mb-4">5. Mood & Energía 🔋</h3>
       <p className="text-xs text-gray-400 mb-2">¿Cómo te sientes?</p>
+      
+      {/* Botones de selección de mood */}
       <div className="grid grid-cols-2 gap-2 mb-6">
         {MOODS.map(mood => (
           <button
@@ -46,6 +50,7 @@ export default function MoodWidget({ onMoodChange, onEnergyChange }) {
         ))}
       </div>
 
+      {/* Control deslizante de energía */}
       <div className="flex justify-between items-center mb-2">
         <p className="text-xs text-gray-400">Nivel de Energía</p>
         <span className="text-green-400 font-mono text-sm">{energy}%</span>
